@@ -35,83 +35,70 @@ get_returns <- (function() {
 
 
 
-# --- Grid Search (funciton) ---
-
-(function(data, r) {
+(function(data, r, step) {
   
-  l <- length(colnames(data))
-  # Expected returns and covariance
+  # --- Expected returns and covariance ---
   mu    <- colMeans(data)
   Sigma <- cov(data)
+  rf    <- r
+  n     <- ncol(data)
+  grid  <- seq(0, 1, by = step)
   
-  # Risk-free rate (adjusted to scale)
-  rf = r
+  # --- Generate all possible weight combinations dynamically ---
+  W <- expand.grid(rep(list(grid), n))
+  W <- W[rowSums(W) == 1, , drop = FALSE]
+  W <- as.matrix(W)
   
-  # Step size
-  grid <- seq(0, 1, by =  0.01)
-  
-  # Containers for optimal portfolios
+  # --- Containers for results ---
   best_sharpe <- -Inf
-  best_sharpe_ret <- NA
-  best_sharpe_risk <- NA
+  best_sharpe_ret <- best_sharpe_risk <- NA
   best_sharpe_w <- NULL
+  
   min_risk <- Inf
-  min_risk_ret <- NA
-  min_risk_val <- NA
+  min_risk_ret <- min_risk_val <- NA
   min_risk_w <- NULL
   
-  
-  for (w1 in grid) {
-    for (w2 in grid) {
-      for (w3 in grid) {
-        w4 <- 1 - (w1 + w2 + w3)
-        if (w4 >= 0) {
-          w <- c(w1, w2, w3, w4)
-          
-          ret  <- sum(w * mu)
-          risk <- sqrt(as.numeric(t(w) %*% Sigma %*% w))
-          sharpe <- (ret - rf) / risk
-          
-          #  Maximum Sharpe portfolio
-          if (sharpe > best_sharpe) {
-            best_sharpe <- sharpe
-            best_sharpe_ret <- ret
-            best_sharpe_risk <- risk
-            best_sharpe_w <- w
-          }
-          
-          # Minimum risk portfolio
-          if (risk < min_risk) {
-            min_risk <- risk
-            min_risk_ret <- ret
-            min_risk_val <- risk
-            min_risk_w <- w
-          }
-        }
-      }
+  # --- Single loop for all combinations ---
+  for (i in seq_len(nrow(W))) {
+    w <- W[i, ]
+    ret  <- sum(w * mu)
+    risk <- sqrt(as.numeric(t(w) %*% Sigma %*% w))
+    sharpe <- (ret - rf) / risk
+    
+    # Maximum Sharpe portfolio
+    if (sharpe > best_sharpe) {
+      best_sharpe <- sharpe
+      best_sharpe_ret <- ret
+      best_sharpe_risk <- risk
+      best_sharpe_w <- w
+    }
+    
+    # Minimum risk portfolio
+    if (risk < min_risk) {
+      min_risk <- risk
+      min_risk_ret <- ret
+      min_risk_val <- risk
+      min_risk_w <- w
     }
   }
   
-  # Results
+  # --- Results ---
   results_df <- data.frame(
     Type   = c("Max Sharpe", "Min Risk"),
     Sharpe = c(best_sharpe, NA),
     Return = c(best_sharpe_ret, min_risk_ret),
     Risk   = c(best_sharpe_risk, min_risk_val)
   )
+  
   weighted_df <- rbind(
-    Max_Sharpe = round(best_sharpe_w, l),
-    Min_Risk   = round(min_risk_w, l)
+    Max_Sharpe = round(best_sharpe_w, 4),
+    Min_Risk   = round(min_risk_w, 4)
   )
   colnames(weighted_df) <- colnames(data)
-  weighted_df <- as.data.frame(weighted_df)
   
-  return(list(
-    results_df = results_df,
-    weighted_df = weighted_df
-  ))
+  list(results_df = results_df, weights = as.data.frame(weighted_df))
   
-}) (get_returns, r=0)
+})(get_returns, r = 0, step=0.01)
 
 
 
@@ -119,32 +106,28 @@ get_returns <- (function() {
 
 # --- Graph ---
 
-local({
+(function(data, step) {
+  
 # Step size
-grid <- seq(0, 1, by = 0.01)
-mu    <- colMeans(get_returns)
-Sigma <- cov(get_returns)
-
-port_rets <- c()
-port_risks <- c()
-
-for (w1 in grid) {
-  for (w2 in grid) {
-    for (w3 in grid) {
-      w4 <- 1 - (w1 + w2 + w3)
-      if (w4 >= 0) {
-        w <- c(w1, w2, w3, w4)
-        ret  <- sum(w * mu)
-        risk <- sqrt(t(w) %*% Sigma %*% w)
-        port_rets  <- c(port_rets, ret)
-        port_risks <- c(port_risks, risk)
-      }
-    }
-  }
-}
-
-# Plot: risk-return space
-plot(port_risks, port_rets, col=rgb(0,0,1,0.3), pch=16,
-     xlab="Risk (σ)", ylab="Beklenen Getiri",
-     main="Portfolio Risk-Return Space")
-})
+    grid <- seq(0, 1, by = step)
+    mu    <- colMeans(data)
+    Sigma <- cov(data)
+    n     <- length(mu)
+    
+    # Tüm kombinasyonları matris olarak oluştur
+    W <- expand.grid(rep(list(grid), n - 1))  # son ağırlığı çıkarıyoruz
+    W$w_last <- 1 - rowSums(W)                # son ağırlık: 1 - diğerlerinin toplamı
+    W <- W[W$w_last >= 0, ]                   # geçerli portföyler (ağırlıklar >= 0)
+    W <- as.matrix(W)
+    
+    # Tek döngüde risk ve getiri hesapla (vektörize)
+    port_rets  <- as.vector(W %*% mu)
+    port_risks <- sqrt(rowSums((W %*% Sigma) * W))
+    
+    # Grafik
+    plot(port_risks, port_rets,
+         col = rgb(0, 0, 1, 0.3), pch = 16,
+         xlab = "Risk (σ)", ylab = "Beklenen Getiri",
+         main = "Portfolio Risk-Return Space (Single Loop Version)")
+    grid()
+  })(get_returns, 0.01)
