@@ -37,6 +37,7 @@ get_returns <- (function() {
 
 (function(data, r, step) {
   
+  l <- length(colnames(data))
   # --- Expected returns and covariance ---
   mu    <- colMeans(data)
   Sigma <- cov(data)
@@ -91,8 +92,8 @@ get_returns <- (function() {
   )
   
   weighted_df <- rbind(
-    Max_Sharpe = round(best_sharpe_w, 4),
-    Min_Risk   = round(min_risk_w, 4)
+    Max_Sharpe = round(best_sharpe_w, l),
+    Min_Risk   = round(min_risk_w, l)
   )
   colnames(weighted_df) <- colnames(data)
   
