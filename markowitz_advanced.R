@@ -34,20 +34,20 @@ get_returns <- (function() {
 
 
 
+# --- Markowitz Optimization ---
 
-(function(data=get_returns, r=0) {
+(function(data, rf = 0) {
   
   # Expected returns and covariance
   Sigma <- cov(data)
   mu <- colMeans(data)
   
   # Risk-free rate (adjusted to scale)
-  rf <- r
+  rf
   
   
   n <- ncol(Sigma)
-  l <- length(colnames(data))
-  
+
   ## Minimum Variance Portfolio
   Dmat <- 2 * Sigma
   dvec <- rep(0, n)
@@ -80,6 +80,8 @@ get_returns <- (function() {
   risk_sharpe <- sqrt(crossprod(w_sharpe, crossprod(Sigma, w_sharpe)))
   sharpe_val <- (ret_sharpe - rf) / risk_sharpe
   
+  l <- length(colnames(data))
+  
   ## Results
   
   results_df <- data.frame(
@@ -101,7 +103,7 @@ get_returns <- (function() {
     results_df = results_df,
     weighted_df = weighted_df
   ))
-  }) ()
+  }) (get_returns, r = 0)
 
 
 
@@ -109,7 +111,7 @@ get_returns <- (function() {
 
 # Risk-Return Space
 
-(function(data=get_returns, rf = 0, n_points = 50000) {
+(function(data, rf = 0, n_points) {
   mu <- colMeans(data)
   Sigma <- cov(data)
   n <- ncol(Sigma)
@@ -136,7 +138,7 @@ get_returns <- (function() {
        main = "Risk-Getiri Uzayı (Vektörize Matris Yöntemi)")
   grid()
   
-}) ()
+}) (get_returns, 0, 50000)
 
 
 
