@@ -1,2 +1,2 @@
-# markowitz-portfolio
-Markowitz Portfolio Optimization model using R.
+# portfolio_optimization
+Markowitz and Sharpe Portfolio Optimization model using R.
