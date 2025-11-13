@@ -59,6 +59,7 @@ get_returns <- (function() {
   w_min <- w_min / sum(w_min)
   ret_min <- sum(w_min * mu)
   risk_min <- sqrt(crossprod(w_min, crossprod(Sigma, w_min)))
+  min_risk_sharpe <- (ret_min - rf) / risk_min
   
   ## Maximum Sharpe Portfolio
   sharpe_fn <- function(w) {
@@ -86,7 +87,7 @@ get_returns <- (function() {
   
   results_df <- data.frame(
     Type   = c("Max Sharpe", "Min Risk"),
-    Sharpe = c(round(sharpe_val, l), NA),
+    Sharpe = c(round(sharpe_val, l), round(min_risk_sharpe, l)),
     Return = c(round(ret_sharpe, l), round(ret_min, l)),
     Risk   = c(round(risk_sharpe, l), round(risk_min, l))
   )
@@ -134,8 +135,8 @@ get_returns <- (function() {
   # Plot
   plot(df$Risk, df$Return,
        col = rgb(0, 0, 1, 0.3), pch = 16,
-       xlab = "Risk (σ)", ylab = "Beklenen Getiri (μ)",
-       main = "Risk-Getiri Uzayı (Vektörize Matris Yöntemi)")
+       xlab = "Risk (O)", ylab = "Beklenen Getiri (N<)",
+       main = "Risk-Getiri UzayD1 (VektC6rize Matris YC6ntemi)")
   grid()
   
 }) (get_returns, 0, 50000)
