@@ -49,7 +49,9 @@ get_returns <- (function() {
   
   
   # --- Generate all possible weight combinations dynamically ---
-  W <- as.matrix(subset(expand.grid(rep(list(grid), n)), rowSums(.) == 1))
+  W <- expand.grid(rep(list(grid), n))
+  W <- W[rowSums(W) == 1, , drop = FALSE]
+  W <- as.matrix(W)
   
   # --- Containers for results ---
   best_sharpe <- -Inf
@@ -81,6 +83,7 @@ get_returns <- (function() {
       min_risk_ret <- ret
       min_risk_val <- risk
       min_risk_w <- w
+      min_risk_sharpe <- sharpe
     }
   }
   
@@ -89,7 +92,7 @@ get_returns <- (function() {
   # --- Results ---
   results_df <- data.frame(
     Type   = c("Max Sharpe", "Min Risk"),
-    Sharpe = c(best_sharpe, NA),
+    Sharpe = c(best_sharpe, min_risk_sharpe),
     Return = c(best_sharpe_ret, min_risk_ret),
     Risk   = c(best_sharpe_risk, min_risk_val)
   )
